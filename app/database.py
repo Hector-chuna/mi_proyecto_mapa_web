@@ -4,9 +4,9 @@ import os
 from datetime import datetime, date
 import sys
 
-# NOTE: get_db_path is likely for a local SQLite database with PyInstaller.
-# If your Streamlit app is connecting to a remote MySQL, this function
-# is probably not needed for the Streamlit environment.
+# NOTA: get_db_path es probablemente para una base de datos SQLite local con PyInstaller.
+# Si tu aplicación Streamlit se conecta a un MySQL remoto, esta función
+# probablemente no es necesaria para el entorno de Streamlit Cloud.
 def get_db_path(db_filename="database.db"):
     if getattr(sys, 'frozen', False):
         bundle_dir = sys._MEIPASS
@@ -19,6 +19,10 @@ def get_db_path(db_filename="database.db"):
     return db_path
 
 def connect_to_database(db_config):
+    """
+    Intenta establecer una conexión con la base de datos MySQL usando los parámetros proporcionados.
+    db_config es un diccionario que contiene 'host', 'port', 'user', 'password', 'database'.
+    """
     try:
         connection = pymysql.connect(
             host=db_config['host'],
@@ -40,6 +44,9 @@ def connect_to_database(db_config):
         return None
 
 def close_database_connection(conexion):
+    """
+    Cierra la conexión a la base de datos si está abierta.
+    """
     if conexion:
         try:
             conexion.close()
@@ -51,6 +58,9 @@ def close_database_connection(conexion):
 
 
 def fetch_categorias(conexion):
+    """
+    Recupera todas las categorías de la tabla 'categoria'.
+    """
     try:
         with conexion.cursor() as cursor:
             query = "SELECT id_categoria, descripcion_categoria FROM categoria ORDER BY descripcion_categoria;"
@@ -61,6 +71,9 @@ def fetch_categorias(conexion):
         return []
 
 def fetch_marcas(conexion, id_categoria=None):
+    """
+    Recupera marcas, opcionalmente filtradas por ID de categoría.
+    """
     try:
         with conexion.cursor() as cursor:
             query = "SELECT id_marca, descripcion_marca FROM marca"
@@ -83,6 +96,9 @@ def fetch_marcas(conexion, id_categoria=None):
         return []
 
 def fetch_vendedores(conexion, id_categoria=None):
+    """
+    Recupera vendedores, opcionalmente filtrados por ID de categoría.
+    """
     try:
         with conexion.cursor() as cursor:
             # Asumo que la tabla 'vendedor' tiene un ID_VEND único.
@@ -108,6 +124,9 @@ def fetch_vendedores(conexion, id_categoria=None):
         return []
 
 def fetch_departamentos(conexion):
+    """
+    Recupera todos los departamentos de la tabla 'departamento'.
+    """
     try:
         with conexion.cursor() as cursor:
             query = "SELECT id_dpto, descripcion_dpto FROM departamento ORDER BY descripcion_dpto;"
@@ -118,6 +137,9 @@ def fetch_departamentos(conexion):
         return []
 
 def fetch_ciudades(conexion, id_dpto=None):
+    """
+    Recupera ciudades, opcionalmente filtradas por ID de departamento.
+    """
     try:
         with conexion.cursor() as cursor:
             query = "SELECT id_ciudad, descripcion_ciudad FROM ciudad"
@@ -135,6 +157,9 @@ def fetch_ciudades(conexion, id_dpto=None):
 # --- FUNCIONES CLAVE PARA EL MAPA ---
 
 def fetch_points_with_last_sale_preventa_1(conexion, id_categoria=None, id_marca=None, descripcion_vend=None, id_dpto=None, id_ciudad=None):
+    """
+    Recupera puntos de venta con la última venta de 'PREVENTA = 1', aplicando varios filtros.
+    """
     try:
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             # Lista para almacenar los parámetros en el orden correcto de aparición en la consulta
@@ -247,9 +272,10 @@ def fetch_points_with_last_sale_preventa_1(conexion, id_categoria=None, id_marca
         return []
 
 def fetch_points_with_last_sale_preventa_no_1(conexion, ids_marcas=None):
-    # Esta función se revierte a su objetivo original de solo identificar clientes con PREVENTA 2 o 3
-    # y los campos básicos que necesita el map_generator para distinguirlos y posiblemente unirlos.
-    # No se añaden campos de popup aquí, se asume que map_generator.py los manejará.
+    """
+    Recupera puntos de venta con 'PREVENTA' diferente de 1 (2 o 3),
+    utilizado para identificar mercadería en tránsito o programada.
+    """
     try:
         with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             query = """

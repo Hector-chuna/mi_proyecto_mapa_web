@@ -41,35 +41,26 @@ def get_resource_path(relative_path):
     full_path = os.path.join(base_path, relative_path)
     print(f"--- [app.py] Ruta completa del recurso: {full_path} ---")
     return full_path
-
 def load_db_config_streamlit():
     """
-    Carga la configuración de la base de datos.
-    Intenta desde las variables de entorno de Streamlit Cloud,
-    si no, desde el archivo db_config.json local.
+    Carga la configuración de la base de datos EXCLUSIVAMENTE desde Streamlit Secrets.
     """
-    print("--- [app.py] Intentando cargar configuración de DB ---")
-    if os.environ.get("DB_HOST"):
-        st.info("Cargando configuración de DB desde Streamlit Secrets (variables de entorno).")
+    print("--- [app.py] Intentando cargar configuración de DB desde Streamlit Secrets. ---")
+    if "HOST" in st.secrets: # Usamos st.secrets en lugar de os.environ
+        st.info("Cargando configuración de DB desde Streamlit Secrets.")
         print("--- [app.py] Configuración de DB cargada desde Streamlit Secrets. ---")
         return {
-            "host": os.environ.get("DB_HOST"),
-            "port": int(os.environ.get("DB_PORT", 3306)),
-            "user": os.environ.get("DB_USER"),
-            "password": os.environ.get("DB_PASSWORD"),
-            "database": os.environ.get("DB_NAME")
+            "host": st.secrets["HOST"], # st.secrets en lugar de os.environ
+            "port": st.secrets["PORT"],  # st.secrets en lugar de os.environ
+            "user": st.secrets["USER"],  # st.secrets en lugar de os.environ
+            "password": st.secrets["PASSWORD"], # st.secrets en lugar de os.environ
+            "database": st.secrets["DATABASE"] # st.secrets en lugar de os.environ
         }
     else:
-        st.info("Cargando configuración de DB desde db_config.json local.")
-        config_file_path = get_resource_path(os.path.join("app", "db_config.json"))
-        if not os.path.exists(config_file_path):
-            st.error(f"Error: No se encontró el archivo db_config.json en la ruta esperada: {config_file_path}")
-            print(f"--- [app.py] ERROR: db_config.json no encontrado en {config_file_path} ---")
-            st.stop()
-        with open(config_file_path, 'r') as f:
-            db_config = json.load(f)
-            print(f"--- [app.py] Configuración de DB cargada desde {config_file_path}. ---")
-            return db_config
+        st.error("Error: No se encontraron las variables de configuración de la base de datos en Streamlit Secrets.")
+        print("--- [app.py] ERROR: No se encontraron las variables de configuración de la base de datos en Streamlit Secrets. ---")
+        st.stop()
+
 
 # --- 3. Conexión a la Base de Datos Cacheada con st.cache_resource ---
 
