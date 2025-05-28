@@ -28,3 +28,5 @@ tomli==2.2.1
 urllib3==2.3.0
 Werkzeug==3.1.3
 xyzservices==2025.1.0
+streamlit_folium # <-- ¡Esta es la que faltaba!
+streamlit # <-- Asegúrate de que streamlit también esté listado, si no lo tienes ya en tu entorno.
