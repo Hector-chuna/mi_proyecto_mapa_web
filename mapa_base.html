@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa Interactivo</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; }
+        #map { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; }
+        
+        #controls-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #filters-panel {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            width: 280px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #filters-panel label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        #filters-panel select, #filters-panel button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        
+        #filters-panel button {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+        #filters-panel button:hover {
+            background-color: #0056b3;
+        }
+        #filters-panel #reset-filters-button {
+            background-color: #dc3545;
+        }
+        #filters-panel #reset-filters-button:hover {
+            background-color: #c82333;
+        }
+
+        .stats-panel {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            width: 280px;
+        }
+        .stats-panel h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #0056b3;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .stats-panel p {
+            margin: 5px 0;
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: #333;
+        }
+        .stats-panel .color-label {
+            font-weight: bold;
+        }
+        .stats-panel .color-green { color: green; }
+        .stats-panel .color-orange { color: orange; }
+        .stats-panel .color-red { color: red; }
+        .stats-panel .color-black { color: black; }
+
+
+        .marker-letter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: white;
+            font-size: 10px;
+        }
+        .custom-diamond-icon .marker-letter {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        .expand-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .expand-button:hover {
+            background-color: #0056b3;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #ddd;
+            margin: 10px 0;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            padding: 1px;
+            background-color: #fff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            padding: 10px;
+        }
+
+        .leaflet-popup-content h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+            color: #0056b3;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .leaflet-popup-content p {
+            margin: 0;
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .leaflet-popup-content p strong {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="controls-container">
+        <div id="filters-panel">
+            <h3>Filtros</h3>
+            <div>
+                <label for="categoria-select">Categoría:</label>
+                <select id="categoria-select">
+                    <option value="">Todas las Categorías</option>
+                </select>
+            </div>
+            <div>
+                <label for="marca-select">Marca:</label>
+                <select id="marca-select">
+                    <option value="">Todas las Marcas</option>
+                </select>
+            </div>
+            <div>
+                <label for="vendedor-select">Vendedor:</label>
+                <select id="vendedor-select">
+                    <option value="">Todos los Vendedores</option>
+                </select>
+            </div>
+            <div>
+                <label for="departamento-select">Departamento:</label>
+                <select id="departamento-select">
+                    <option value="">Todos los Departamentos</option>
+                </select>
+            </div>
+            <div>
+                <label for="ciudad-select">Ciudad:</label>
+                <select id="ciudad-select">
+                    <option value="">Todas las Ciudades</option>
+                </select>
+            </div>
+            <button id="apply-filters-button">Aplicar Filtros</button>
+            <button id="reset-filters-button">Reiniciar Filtros</button>
+        </div>
+
+        <div id="stats-general-panel" class="stats-panel" style="margin-bottom: 10px;">
+            <h4>TOTAL GRAL.: <span id="total-general-clientes">0</span></h4> 
+        </div>
+
+        <div id="stats-circles-panel" class="stats-panel">
+            <h4>CÍRCULOS: <span id="total-circles">0</span></h4>
+            <p><span class="color-label color-green">Verde:</span> <span id="circles-green">0</span></p>
+            <p><span class="color-label color-orange">Naranja:</span> <span id="circles-orange">0</span></p>
+            <p><span class="color-label color-red">Rojo:</span> <span id="circles-red">0</span></p>
+            <p><span class="color-label color-black">Negro:</span> <span id="circles-black">0</span></p>
+        </div>
+
+        <div id="stats-diamonds-panel" class="stats-panel">
+            <h4>DIAMANTES: <span id="total-diamonds">0</span></h4>
+            <p><span class="color-label color-green">Verde:</span> <span id="diamonds-green">0</span></p>
+            <p><span class="color-label color-orange">Naranja:</span> <span id="diamonds-orange">0</span></p>
+            <p><span class="color-label color-red">Rojo:</span> <span id="diamonds-red">0</span></p>
+            <p><span class="color-label color-black">Negro:</span> <span id="diamonds-black">0</span></p>
+        </div>
+    </div>
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+    <script>
+        var map = L.map('map').setView([-25.3006, -57.5756], 12); // Centro inicial en Asunción, Paraguay
+        var markers = L.markerClusterGroup();
+        var pythonBridge;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            subdomains: ['a', 'b', 'c'],
+            maxZoom: 19
+        }).addTo(map);
+
+        function getDiamondIcon(color, letter) {
+            return L.divIcon({
+                className: 'custom-diamond-icon',
+                html: `<div style="
+                    background-color: ${color};
+                    width: 20px;
+                    height: 20px;
+                    transform: rotate(45deg);
+                    border: 1px solid ${color === 'black' ? '#555' : 'transparent'};
+                    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                "><span class="marker-letter">${letter}</span></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                popupAnchor: [0, -10]
+            });
+        }
+
+        function getCircleIcon(color, letter) {
+            return L.divIcon({
+                className: 'custom-circle-icon',
+                html: `<div style="
+                    background-color: ${color};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 1px solid #000;
+                    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                "><span class="marker-letter">${letter}</span></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+                popupAnchor: [0, -8]
+            });
+        }
+        
+        // Función para alternar la visibilidad de una sección en el popup
+        window.togglePopupSection = function(sectionId, button) {
+            const section = document.getElementById(sectionId);
+            if (section && button) {
+                if (section.style.display === 'none' || section.style.display === '') {
+                    section.style.display = 'block';
+                    button.textContent = '- Ocultar Tránsito';
+                } else {
+                    section.style.display = 'none';
+                    button.textContent = '+ Mostrar Tránsito';
+                }
+            }
+        };
+
+        // Evento de delegación para los botones de expansión en los popups
+        map.on('popupopen', function(e) {
+            const popupContent = e.popup.getElement(); 
+            if (popupContent) {
+                const expandButton = popupContent.querySelector('.expand-button[data-target]');
+                if (expandButton) {
+                    expandButton.style.display = 'block'; 
+                    expandButton.onclick = function() {
+                        const targetId = this.getAttribute('data-target');
+                        window.togglePopupSection(targetId, this);
+                    };
+                }
+            }
+        });
+        
+        // Opcional: Cuando el popup se cierra, podrías querer resetear el estado del botón
+        map.on('popupclose', function(e) {
+            const popupContent = e.popup.getElement();
+            if (popupContent) {
+                const expandButton = popupContent.querySelector('.expand-button[data-target]');
+                if (expandButton) {
+                    const targetId = expandButton.getAttribute('data-target');
+                    const section = document.getElementById(targetId);
+                    if (section) {
+                        section.style.display = 'none'; // Ocultar la sección al cerrar el popup
+                        expandButton.textContent = '+ Mostrar Tránsito'; // Restablecer el texto del botón
+                    }
+                }
+            }
+        });
+
+
+        window.initPythonBridge = function() {
+            if (typeof QWebChannel === 'undefined') {
+                console.error("QWebChannel no está definido. Verifique la inclusión de qwebchannel.js.");
+                return;
+            }
+
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+                pythonBridge = channel.objects.bridge;
+                if (pythonBridge) {
+                    console.log("QWebChannel conectado. Bridge a Python disponible.");
+                    
+                    // Solicitar datos iniciales de filtros
+                    pythonBridge.getInitialFilterData(function(jsonData) {
+                        var data = JSON.parse(jsonData);
+                        if (data.error) {
+                            console.error("Error al cargar datos iniciales de filtros:", data.error);
+                            return;
+                        }
+                        populateFilterDropdowns(data);
+                        console.log("Datos iniciales de filtros cargados y dropdowns poblados.");
+
+                        // --- NUEVO: Configurar event listeners para los dropdowns ---
+                        document.getElementById('categoria-select').addEventListener('change', function() {
+                            const id_categoria = this.value;
+                            updateMarcaDropdown(id_categoria);
+                            updateVendedorDropdown(id_categoria);
+                        });
+
+                        document.getElementById('departamento-select').addEventListener('change', function() {
+                            const id_dpto = this.value;
+                            updateCiudadDropdown(id_dpto);
+                        });
+                    });
+                } else {
+                    console.error("El objeto 'bridge' no está disponible en QWebChannel. Verifique 'channel.objects.bridge'.");
+                }
+            });
+        };
+
+        function populateFilterDropdowns(data) {
+            const selects = {
+                'categoria-select': data.categorias,
+                'marca-select': data.marcas,
+                'vendedor-select': data.vendedores,
+                'departamento-select': data.departamentos,
+                'ciudad-select': data.ciudades
+            };
+
+            for (const id in selects) {
+                const selectElement = document.getElementById(id);
+                const options = selects[id];
+                if (selectElement && options) {
+                    const defaultOptionHtml = selectElement.options[0].outerHTML;
+                    selectElement.innerHTML = ''; 
+                    selectElement.insertAdjacentHTML('beforeend', defaultOptionHtml);
+
+                    options.forEach(item => {
+                        const option = document.createElement('option');
+                        // Lógica específica para el select de vendedor: el valor es la descripción
+                        if (id === 'vendedor-select') {
+                            option.value = item.descripcion; 
+                        } else {
+                            // Para los demás selects, el valor es el ID
+                            option.value = item.id; 
+                        }
+                        option.textContent = item.descripcion;
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    console.warn(`Elemento select con ID '${id}' o sus datos no encontrados.`);
+                }
+            }
+        }
+
+        // --- Funciones para actualizar los dropdowns dependientes ---
+        function updateMarcaDropdown(id_categoria) {
+            if (pythonBridge) {
+                pythonBridge.getFilteredMarcas(id_categoria, function(jsonData) {
+                    const response = JSON.parse(jsonData);
+                    if (response.status === "success") {
+                        const marcas = response.data;
+                        const selectElement = document.getElementById('marca-select');
+                        const defaultOptionHtml = selectElement.options[0].outerHTML;
+                        selectElement.innerHTML = '';
+                        selectElement.insertAdjacentHTML('beforeend', defaultOptionHtml);
+                        marcas.forEach(marca => {
+                            const option = document.createElement('option');
+                            option.value = marca.id;
+                            option.textContent = marca.descripcion;
+                            selectElement.appendChild(option);
+                        });
+                    } else {
+                        console.error("Error al obtener marcas filtradas:", response.message);
+                    }
+                });
+            }
+        }
+
+        function updateVendedorDropdown(id_categoria) {
+            if (pythonBridge) {
+                pythonBridge.getFilteredVendedores(id_categoria, function(jsonData) {
+                    const response = JSON.parse(jsonData);
+                    if (response.status === "success") {
+                        const vendedores = response.data;
+                        const selectElement = document.getElementById('vendedor-select');
+                        const defaultOptionHtml = selectElement.options[0].outerHTML;
+                        selectElement.innerHTML = '';
+                        selectElement.insertAdjacentHTML('beforeend', defaultOptionHtml);
+                        vendedores.forEach(vendedor => {
+                            const option = document.createElement('option');
+                            option.value = vendedor.descripcion; // Usar la descripción como valor
+                            option.textContent = vendedor.descripcion;
+                            selectElement.appendChild(option);
+                        });
+                    } else {
+                        console.error("Error al obtener vendedores filtrados:", response.message);
+                    }
+                });
+            }
+        }
+
+        function updateCiudadDropdown(id_dpto) {
+            if (pythonBridge) {
+                pythonBridge.getFilteredCiudades(id_dpto, function(jsonData) {
+                    const response = JSON.parse(jsonData);
+                    if (response.status === "success") {
+                        const ciudades = response.data;
+                        const selectElement = document.getElementById('ciudad-select');
+                        const defaultOptionHtml = selectElement.options[0].outerHTML;
+                        selectElement.innerHTML = '';
+                        selectElement.insertAdjacentHTML('beforeend', defaultOptionHtml);
+                        ciudades.forEach(ciudad => {
+                            const option = document.createElement('option');
+                            option.value = ciudad.id;
+                            option.textContent = ciudad.descripcion;
+                            selectElement.appendChild(option);
+                        });
+                    } else {
+                        console.error("Error al obtener ciudades filtradas:", response.message);
+                    }
+                });
+            }
+        }
+
+        document.getElementById('apply-filters-button').addEventListener('click', function() {
+            const filterParams = {
+                id_categoria: document.getElementById('categoria-select').value || null,
+                id_marca: document.getElementById('marca-select').value || null,
+                // Para el vendedor, enviamos directamente la descripción, 
+                // ya que el HTML está configurado para que el 'value' sea la descripción.
+                descripcion_vend: document.getElementById('vendedor-select').value || null,
+                id_dpto: document.getElementById('departamento-select').value || null,
+                id_ciudad: document.getElementById('ciudad-select').value || null
+            };
+            if (pythonBridge) {
+                pythonBridge.applyFilters(JSON.stringify(filterParams), function(responseJson) {
+                    const response = JSON.parse(responseJson);
+                    if (response.status === "success") {
+                        console.log("Filtros enviados a Python exitosamente:", filterParams);
+                    } else {
+                        console.error("Error al aplicar filtros en Python:", response.message);
+                    }
+                });
+            } else {
+                console.error("Python bridge no disponible.");
+            }
+        });
+
+        document.getElementById('reset-filters-button').addEventListener('click', function() {
+            document.getElementById('categoria-select').value = "";
+            document.getElementById('marca-select').value = "";
+            document.getElementById('vendedor-select').value = "";
+            document.getElementById('departamento-select').value = "";
+            document.getElementById('ciudad-select').value = "";
+
+            if (pythonBridge) {
+                pythonBridge.resetFilters(function(responseJson) {
+                    const response = JSON.parse(responseJson);
+                    if (response.status === "success") {
+                        console.log("Solicitud de reinicio de filtros enviada a Python exitosamente.");
+                    } else {
+                        console.error("Error al reiniciar filtros en Python:", response.message);
+                    }
+                });
+            } else {
+                console.error("Python bridge no disponible.");
+            }
+        });
+
+        window.updateMapAndStats = function(puntos, estadisticas) {
+            console.log("Actualizando mapa y estadísticas con nuevos datos de Python.");
+            
+            markers.clearLayers();
+
+            puntos.forEach(function(punto) {
+                // Verificamos que las coordenadas existan y sean numéricas
+                if (punto.lat != null && punto.lng != null && !isNaN(punto.lat) && !isNaN(punto.lng)) {
+                    var marker;
+                    var popupContent = punto.popup_html;
+                    var firstLetter = punto.first_letter_vend || '';
+
+                    if (punto.shape === 'circle') {
+                        marker = L.marker([punto.lat, punto.lng], {
+                            icon: getCircleIcon(punto.color, firstLetter)
+                        });
+                    } else if (punto.shape === 'diamond') {
+                        marker = L.marker([punto.lat, punto.lng], {
+                            icon: getDiamondIcon(punto.color, firstLetter)
+                        });
+                    }
+
+                    if (marker) {
+                        marker.bindPopup(popupContent);
+                        markers.addLayer(marker);
+                    }
+                } else {
+                    console.warn(`Punto con coordenadas inválidas o nulas (omitiendo): Lat=${punto.lat}, Lng=${punto.lng}`);
+                }
+            });
+            map.addLayer(markers);
+            console.log("Marcadores actualizados.");
+
+            if (markers.getLayers().length > 0) {
+                map.fitBounds(markers.getBounds());
+            } else {
+                map.setView([-25.3006, -57.5756], 12); // Centro inicial en Asunción, Paraguay
+            }
+
+            // --- ESTA ES LA SECCIÓN CLAVE PARA LOS TOTALES ---
+            // Asegúrate de que tu objeto 'estadisticas' enviado desde Python
+            // contenga estas propiedades para que se actualicen correctamente.
+            document.getElementById('total-general-clientes').textContent = estadisticas.total_general_clientes || 0; // <-- Aquí se espera 'total_general_clientes'
+            document.getElementById('total-circles').textContent = estadisticas.total_circles || 0;
+            document.getElementById('total-diamonds').textContent = estadisticas.total_diamonds || 0;
+
+            document.getElementById('circles-green').textContent = estadisticas.conteo_circle.green || 0;
+            document.getElementById('circles-orange').textContent = estadisticas.conteo_circle.orange || 0;
+            document.getElementById('circles-red').textContent = estadisticas.conteo_circle.red || 0;
+            document.getElementById('circles-black').textContent = estadisticas.conteo_circle.black || 0;
+
+            document.getElementById('diamonds-green').textContent = estadisticas.conteo_diamond.green || 0;
+            document.getElementById('diamonds-orange').textContent = estadisticas.conteo_diamond.orange || 0;
+            document.getElementById('diamonds-red').textContent = estadisticas.conteo_diamond.red || 0;
+            document.getElementById('diamonds-black').textContent = estadisticas.conteo_diamond.black || 0;
+
+            console.log("Estadísticas actualizadas.");
+        };
+
+        map.on('tileerror', function(event) {
+            console.error('Error al cargar mosaico:', event.url, event.error);
+        });
+
+    </script>
+</body>
+</html>

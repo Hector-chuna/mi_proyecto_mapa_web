@@ -1,0 +1,110 @@
+/* General styling for the main window and panels */
+QMainWindow {
+    background-color: #f0f0f0; /* Light gray background */
+}
+
+#sidePanel {
+    background-color: #2c3e50; /* Dark blue-gray for the sidebar */
+    color: #ecf0f1; /* Light text color */
+    border-right: 1px solid #34495e; /* Subtle separator */
+    padding: 10px; /* Padding inside the panel */
+}
+
+/* Filters Frame */
+#filtersFrame {
+    background-color: #34495e; /* Slightly lighter dark blue */
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px; /* Space below the filters frame */
+}
+
+/* QComboBox styling */
+QComboBox {
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 5px;
+    min-height: 30px; /* Fixed height for combos */
+    background-color: #4a6a8c; /* Blue-ish background for combos */
+    color: #ecf0f1; /* White text */
+    selection-background-color: #1abc9c; /* Green on selection */
+    selection-color: white;
+    margin-bottom: 5px; /* Space between combos */
+}
+
+QComboBox::drop-down {
+    border: 0px; /* No border for the arrow */
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: url(./app/resources/icons/arrow_down.png); /* Asegúrate de que esta ruta sea correcta y el icono exista */
+    width: 16px;
+    height: 16px;
+}
+
+QComboBox QAbstractItemView {
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #4a6a8c; /* Matching dropdown background */
+    color: #ecf0f1;
+    selection-background-color: #1abc9c;
+    selection-color: white;
+}
+
+/* QPushButton styling */
+QPushButton {
+    background-color: #1abc9c; /* Emerald green */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    font-weight: bold;
+    min-height: 30px; /* Fixed height for buttons */
+    margin-top: 10px; /* Space above buttons */
+}
+
+QPushButton:hover {
+    background-color: #16a085; /* Darker green on hover */
+}
+
+QPushButton:pressed {
+    background-color: #0f7a63; /* Even darker green when pressed */
+}
+
+#reset_button {
+    background-color: #e74c3c; /* Alizarin red for reset */
+}
+
+#reset_button:hover {
+    background-color: #c0392b;
+}
+
+#reset_button:pressed {
+    background-color: #a93226;
+}
+
+/* Statistics Frames */
+#statsFrame {
+    background-color: #34495e; /* Same as filters frame */
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+#statsLabel {
+    font-size: 1.0em;
+    color: #ecf0f1;
+    line-height: 1.5; /* Spacing between lines */
+}
+
+/* Map specific styling (if needed for control buttons over the map) */
+/* You would need to add objectNames to your map control buttons in main_window.py */
+/* Example: */
+/*
+#zoom_in_button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+}
+*/
