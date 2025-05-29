@@ -200,7 +200,7 @@ def show_login_page():
                 st.info("""
                 **Credenciales de acceso:**
                 - Usuario: admin
-                - Contraseña: mapa123456
+                - Contraseña: enviar un mail a pirevaipermanete@gmail.com
 
                 Si tienes problemas para acceder, contacta al administrador del sistema.
                 """)
